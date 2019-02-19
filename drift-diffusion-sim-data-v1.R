@@ -57,7 +57,7 @@ generate_rts_w_single_drift <- function(v, a, Ter, z, s, dt, nTrials, t0){
   
   # initialise a vector to collect responses
   z = rep(z, times = nTrials)
-  tmp = lapply(z, get.trials, t0 = t0, a = a, Ter = Ter) # apply get.trials function nTrials times
+  tmp = lapply(z, get.trials, t0 = t0, a = a, Ter = Ter, v = v, dt = dt) # apply get.trials function nTrials times
   data = do.call(rbind, tmp) # make into a nice data frame
   data
 }
