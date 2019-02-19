@@ -1,7 +1,14 @@
 # drift-diffusion-simple-sim-R
-R-code for simple simulation of RT data using the drift diffusion model
+_R-code_ for simple simulation of RT data using the drift diffusion model
+
+# SSEA_simulation.py and SSEA_simulation.m 
+_Python__ code to simulate responses and RTs using the drift diffusion model.
+
+# simDiff.m
+_MATLAB_ code to simulate responses and RTs using the drift diffusion model.
 
 # Simulate choice RT data using drift diffusion model (quick and dirty method)
-R code written K. Garner, Feb 2019, free to share and use
+written K. Garner, Feb 2019, free to share and use
+based on matlab code by David Sewell 
 
-Matlab code written by D. Sewell, free to share and use
+
