@@ -2,7 +2,7 @@
 _R-code_ for simple simulation of RT data using the drift diffusion model
 
 # SSEA_simulation.py and SSEA_simulation.m 
-_Python__ code to simulate responses and RTs using the drift diffusion model.
+_Python_ code to simulate responses and RTs using the drift diffusion model.
 
 # simDiff.m
 _MATLAB_ code to simulate responses and RTs using the drift diffusion model.
