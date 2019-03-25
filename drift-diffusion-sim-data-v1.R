@@ -1,7 +1,6 @@
 # Simulate choice RT data using drift diffusion model (quick and dirty method)
 # written K. Garner, Feb 2019, free to share and use
 # based on matlab code by David Sewell 
-
 rm(list = ls())
 # code structure:
 # 1. install packages (if necessary), load packages
@@ -18,146 +17,99 @@ library(ggplot2)
 
 # DEFINE FUNCTIONS
 #--------------------------------------------------------------------------
-generate_rts_w_single_drift <- function(v, a, Ter, z, s, dt, nTrials, t0){
+generate_rts_w_single_drift <- function(drift_rate, boundary, non_decision_time, start_point, noise_sdev, time_step, nTrials, t0){
   # use Euler's method to generate sample paths of the diffusion process
   # each trial of the simulation is constructed as a loop that will generate simulated 
-  # sample paths. This loop is then applied nTrials times
+  # sample paths (i.e. accumulations of evidence). This loop is then applied nTrials times
 
 
-  get.trials <- function(z, t0, a, Ter, v, dt){
-    # the following loop controls the evidence accumulation process. At each time step,
-    # the current evidence total (x) is compared againt the value of the two absorbing 
-    # boundaries (a and 0). Sample steps occur until the evidence total crosses
+  get.trials <- function(start_point, t0, boundary, non_decision_time, drift_rate, time_step, noise_sdev){
+    # the following loop controls the evidence accumulation process. At each time_step,
+    # the current evidence total (T_evidene) is compared againt the value of the two absorbing 
+    # boundaries (boundary and 0). Sample steps occur until the evidence total crosses
     # one of the boundaries. Each sample of info changes the evidence total by
-    # an amount that is fixed across time steps (v * dt, mu drift rate * time step),
-    # plus a scaled random draw from a normal distribution with mean 0 and sd s. Once 
+    # an amount that is fixed across time steps (drift_rate * time_steps),
+    # plus a scaled random draw from a normal distribution with mean 0 and sd noise_sdev 
+    # (a value of 0.1 or 1 are often used). Once 
     # evidence total crosses a boundary, the time steps and the boundary crossed are 
-    # recorded
+    # recorded, the non-decision time is then added to the time steps to make the predicted RT
     # initialise evidence
-    x = z
+    T_evidence = start_point
     t = t0
     repeat{
-      x = x + v*dt + s*rnorm(1)*sqrt(dt)
-      t = t + dt
-      if (x > a | x < 0){
+      T_evidence = T_evidence + drift_rate*time_step + rnorm(1, mean=0, sd = noise_sdev)*sqrt(time_step)
+      t = t + time_step
+      if (T_evidence > boundary | T_evidence < 0){
         break
       }
     }
     # a threshold has been reached (hence termination of while loop, so assign response and get RT)
-    if ( x > a )
+    if ( T_evidence > boundary )
       resp = 1
-    else if ( x < 0 ){
+    else if ( T_evidence < 0 ){
       resp = 0
     }
-    RT = t + Ter
+    RT = t + non_decision_time
     
     out = data.frame(resp = resp, RT = RT) # assign the variables to a list
     out # output the list
   }
   
   # initialise a vector to collect responses
-  z = rep(z, times = nTrials)
-  tmp = lapply(z, get.trials, t0 = t0, a = a, Ter = Ter, v = v, dt = dt) # apply get.trials function nTrials times
+  start_point = rep(start_point, times = nTrials)
+  tmp = lapply(start_point, get.trials, t0 = t0, boundary = boundary, 
+               non_decision_time = non_decision_time, drift_rate = drift_rate, 
+               time_step = time_step, noise_sdev = noise_sdev) # apply get.trials function nTrials times
   data = do.call(rbind, tmp) # make into a nice data frame
   data
 }
   
-
-generate_rts_w_independent_drifts <- function(v_i, v_j, a, Ter, z, s, dt, nTrials, t0){
-  # use Euler's method to generate sample paths of the diffusion process
-  # each trial of the simulation is constructed as a loop that will generate simulated 
-  # sample paths, one for each independent accumulator (i & j). 
-  # This loop is then applied nTrials times
-  
-  
-  get.trials <- function(z, t0, a, Ter, v_i, v_j, dt){
-    # the following loop controls the evidence accumulation process. At each time step,
-    # the current evidence total (x) is compared againt the value of the absorbing 
-    # boundaries for each accumulator (i: a_i, j: a_j). Sample steps occur until the evidence total crosses
-    # one of the boundaries. Each sample of info changes the evidence total by
-    # an amount that is fixed across time steps (v_y * dt, mu drift rate * time step),
-    # plus a scaled random draw from a normal distribution with mean 0 and sd s. Once 
-    # evidence total crosses a boundary, the time steps and the boundary crossed are 
-    # recorded
-    # initialise evidence
-    x_i = z
-    x_j = z
-    t = t0
-    repeat{
-      x_i = x_i + v_i*dt + s*rnorm(1)*sqrt(dt)
-      x_j = x_j + v_j*dt + s*rnorm(1)*sqrt(dt)
-      t = t + dt
-      if (x_i > a | x_j > a){
-        break
-      }
-    }
-    # a threshold has been reached (hence termination of while loop, so assign response and get RT)
-    if ( x_i > a )
-      resp = 1
-    else {
-      resp = 0
-    }
-    RT = t + Ter
-    
-    out = data.frame(resp = resp, RT = RT) # assign the variables to a list
-    out # output the list
-  }
-  
-  # initialise a vector to collect responses
-  z = rep(z, times = nTrials)
-  tmp = lapply(z, get.trials, t0 = t0, a = a, Ter = Ter, v_i = v_i, v_j = v_j, dt = dt) # apply get.trials function nTrials times
-  data = do.call(rbind, tmp) # make into a nice data frame
-  data
-}
-
-
 # GENERATE DATA FROM SINGLE DRIFT MODEL
 #--------------------------------------------------------------------------
 # first, set the values for the core parameters in the diffusion model (with single drift implementation):
-v = 0.2 # drift rate
-a = .04 # boundary separation
-Ter = 0.2 # non-decision time
-z = a/2 # for an unbiased start point
+drift_rate        = 0.4 # drift rate
+boundary          = .04 # boundary separation
+non_decision_time = 0.3 # non-decision time
+start_point       = .02 #
 
 # next, set the standard deviation of within trial noise, traditionally set to 0.1 
-# (Ratcliff, 1978), but others set s = 1. Either is fine, as this parameter “scales” the 
+# (Ratcliff, 1978), but others set noise_sdev = 1. Either is fine, as this parameter “scales” the 
 # other parameters in the model (i.e., diffusion model parameters are only defined on a 
 # ratio scale, and so you can get the same predictions from different combinations of 
 # parameter values---if one parameter were to be mulitplied by a constant, the same 
 # predictions would obtain if all other parameters were multiplied (or divided) by the same value).
-s = 0.1 # diffusion coefficient
-dt = .001 # Time steps in seconds
+noise_sdev = 0.1 # diffusion coefficient
+time_step  = .001 # Time steps in seconds
 
 # set the number of trials
 nTrials = 10000
 t0 = 0 # time zero
 #
-# now run the functions to get simulated data
-sing.accum.dat = generate_rts_w_single_drift(v = v, a = a, Ter = Ter, z = z, s = s, dt = dt, nTrials = nTrials, t0=t0)
-
+# Start the clock! (if you want to time, uncomment line below and beneath 'Stop the clock')
+# ptm <- proc.time()
+predicted.data = generate_rts_w_single_drift(drift_rate = drift_rate, boundary = boundary,
+                                             non_decision_time = non_decision_time, 
+                                             start_point = start_point, noise_sdev = noise_sdev, 
+                                             time_step = time_step, nTrials = nTrials, t0=t0)
+# Stop the clock
+# proc.time() - ptm
 # _____________________________________________________________________________________________________
-
-# GENERATE DATA FROM INDEPENDENT DRIFTS MODEL
-#--------------------------------------------------------------------------
-# first, set the values for the core parameters in the diffusion model (with independent drift implementation):
-v_i = 0.19 # first of two independent drift rates (drift i)
-v_j = 0.15 # same for drift j
-a = .04 # boundary separation 
-Ter = 0.2 # non-decision time
-z = a/2 # for an unbiased start point
-
-ind.accum.dat = generate_rts_w_independent_drifts(v_i = v_i, v_j = v_j, a = a, Ter = Ter, z = z, s = s, dt = dt, nTrials = nTrials, t0 = t0)
-# (v_i, v_j, a, Ter, z, s, dt, nTrials, t0)
-#------------------------------------------------------------------------------
-
+# load the previously made distribution
+load("observed_data.Rda")
 # PLOT OUTPUT DATAs AS HISTOGRAMS
-plot.RTs <- function(data){
+plot.observed_vs_predicted_RTs <- function(observed, predicted){
   
-  plot <- ggplot(data, aes(x=RT, color=as.factor(resp))) +
-    geom_histogram(binwidth=.02) +
-    facet_wrap(~as.factor(resp))
-  plot
+par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
+ 
+  get.plot <- function(observed, predicted, response){
+    tmp = with(predicted, density(RT[resp==response]))
+    with(observed, hist(RT[resp==response], prob=TRUE, main = paste("resp = ", response, sep=""),
+                        xlab="RT", xlim=c(0,1), ylim=c(0,max(tmp$y)), col=scales::alpha('skyblue',.5)))
+    with(predicted, lines(density(RT[resp==response]), col="#F24D29", lwd=2))
+  }
+  
+  get.plot(observed = observed, predicted = predicted, response = 0)
+  get.plot(observed = observed, predicted = predicted, response = 1)
 }
 
-plot.RTs(sing.accum.dat)
-plot.RTs(ind.accum.dat)
+plot.observed_vs_predicted_RTs(observed.data, predicted.data)
