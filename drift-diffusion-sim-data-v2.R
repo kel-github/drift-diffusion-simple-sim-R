@@ -142,6 +142,74 @@ x2 = chisqFit(data = c(bindata_c,bindata_e),
 x2
 
 
+# IMPLEMENT OPTIMISATION ALGORITHM TO FIND THE PARAMETERS THAT MINIMISE CHI-SQAURE
+#-------------------------------------------------------------------
+
+
+#Create wrapper function that takes parameters and observed data (and other settings) 
+#as input arguments and returns chi-square
+
+wrapper4optim  = function(parms, data, time_step=.01, nTrials=1000,  t0=0){
+  
+  #unpack paramaters
+  drift_rate = parms[1]
+  boundary = parms[2]
+  non_decision_time = parms[3]
+  start_point = parms[4]
+  noise_sdev = parms[5]
+
+  #Generate predicted data under parameters in question
+  predicted.data = generate_rts_w_single_drift(drift_rate = drift_rate, boundary = boundary,
+                                               non_decision_time = non_decision_time, 
+                                               start_point = start_point, noise_sdev = noise_sdev, 
+                                               time_step = time_step, nTrials = nTrials, t0=t0)
+  
+  #get response time quantile information for observed data
+  output1 = data2RTQ(observed.data)
+  binedge_c = output1[[1]]
+  binedge_e = output1[[2]]
+  bindata_c = output1[[3]]
+  bindata_e = output1[[4]]
+  
+  #get response time quantile information for data from model
+  output2 = preds2RTQ(predicted.data, binedge_c, binedge_e)
+  bindata_pc = output2[[1]]
+  bindata_pe = output2[[2]]
+  
+  #calculate chi-square 
+  x2 = chisqFit(data = c(bindata_c,bindata_e),
+                preds = c(bindata_pc,bindata_pe),
+                N = 1)
+  
+  return(x2)
+  
+}
+
+#Specify intiial values for the estimated parameters
+init_drift_rate        = 0.4 # drift rate
+init_boundary          = .04 # boundary separation
+init_non_decision_time = 0.3 # non-decision time
+init_start_point       = .02 # starting point for evidence
+init_noise_sdev        = 0.1 # diffusion coefficient (i.e., noise)
+
+
+#Run optimisation algorithm on wrapper function
+optim(par = c(init_drift_rate,   #starting values for each parameter
+              init_boundary,
+              init_non_decision_time,
+              init_start_point,
+              init_noise_sdev), 
+      fn = wrapper4optim,        #function to be minimised
+      data = observed.data,      #data to which predictions are compared
+      lower = c(-5,0,0.05,0, 0 ),  #lower bound for each parameter
+      upper = c( 5,5,1,   5, 5 ),   #upper bound for each parameter
+      control = list(trace=6))  
+        
+      
+
+
+
+
 
 
 
