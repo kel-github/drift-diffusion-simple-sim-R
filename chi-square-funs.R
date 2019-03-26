@@ -15,21 +15,17 @@ data2RTQ = function(data) {
   #error responses, as the RT distributions for these will be different.
   
   #Loop that goes through the data and separates correct and error responses.
-  
-  #Counters for tracking # of correct/error responses
-  nc = 1
-  ne = 1
+  dataC = numeric(0)
+  dataE = numeric(0)
   
   for (i in 1:dim(data)[1]) {
     #for Trial #1 - #N
     if (data[i, 1] == 1) {
       #Correct response
-      dataC[nc, 1] = data[i, 2] #only take the second column entry, since we no longer need accuracy information
-      nc = nc + 1
+      dataC = c(dataC,data[i, 2]) #only take the second column entry, since we no longer need accuracy information
     } else {
       #Error response
-      dataE[ne, 1] = data[i, 2]
-      ne = ne + 1
+      dataE = c(dataE,data[i, 2])
     }
   }
   
@@ -44,8 +40,8 @@ data2RTQ = function(data) {
   #slowest (for, say, corrects), and then figuring out where the 10th, 30th,
   #50th, 70th, and 90th percentiles of the data are along the time axis.
   
-  binedge_c = quantile[dataC, Qs]
-  binedge_e = quantile[dataE, Qs]
+  binedge_c = quantile(dataC, Qs)
+  binedge_e = quantile(dataE, Qs)
   
   #STEP 3: Compute the proportion of observations within each RT bin
   #Estimating parameters using the chi-square method means that we need a way
@@ -103,27 +99,23 @@ preds2RTQ = function(preds, binedge_c, binedge_e) {
   #Loop that goes through the predictions and separates correct and error
   #trials.
   
-  #Counters for tracking # of correct/error trials
-  nc = 1
-  ne = 1
+  predC = numeric(0)
+  predE = numeric(0)
   
   for (i in 1:dim(preds)[1]) {
     #for Trial #1 - #N
-    if (preds(i, 1) == 1) {
+    if (preds[i, 1] == 1) {
       #Correct response
-      predC[nc, 1] = preds[i, 2] #only take the second column entry, since we no longer need accuracy information
-      nc = nc + 1
+      predC = c(predC,preds[i, 2]) #only take the second column entry, since we no longer need accuracy information
     } else {
       #Error response
-      predE[ne, 1] = preds[i, 2]
-      ne = ne + 1
-      
+      predE = c(predE,preds[i, 2])
     }
   }
   
   #Convert frequencies to proportions (for later).
-  predPC = (nc - 1) / dim(preds[1]) #Predicted P(correct)
-  predPE = (ne - 1) / dim(preds[1]) #Predicted P(error)
+  predPC = length(predC) / dim(preds)[1] #Predicted P(correct)
+  predPE = length(predE) / dim(preds)[1] #Predicted P(error)
   
   #We now identify the proportion of *predicted* trials that fall within the
   #*empirically-defined* bin edges for both correct and error trials.
@@ -142,7 +134,7 @@ preds2RTQ = function(preds, binedge_c, binedge_e) {
     sum(predC <= Qc[3]) - sum(predC <= Qc[2]),
     sum(predC <= Qc[4]) - sum(predC <= Qc[3]),
     sum(predC <= Qc[5]) - sum(predC <= Qc[4]),
-    sum(predC > Qc[5]) / dim(preds[1])
+    sum(predC > Qc[5]) / dim(preds)[1]
   )
   bindata_pe = c(
     sum(predE <= Qe[1]),
@@ -150,7 +142,7 @@ preds2RTQ = function(preds, binedge_c, binedge_e) {
     sum(predE <= Qe[3]) - sum(predE <= Qe[2]),
     sum(predE <= Qe[4]) - sum(predE <= Qe[3]),
     sum(predE <= Qe[5]) - sum(predE <= Qe[4]),
-    sum(predE > Qe[5]) / dim(preds[1])
+    sum(predE > Qe[5]) / dim(preds)[1]
   )
   
   return(list(bindata_pc, bindata_pe))
@@ -176,5 +168,5 @@ chisqFit = function(data, preds, N) {
   #multiple conditions.
   
   x2 = N * sum(sum(((data - preds) ^ 2) / preds))
-  
+  return(x2)
 }

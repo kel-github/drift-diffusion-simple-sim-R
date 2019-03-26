@@ -104,7 +104,7 @@ par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
   get.plot <- function(observed, predicted, response){
     tmp = with(predicted, density(RT[resp==response]))
     with(observed, hist(RT[resp==response], prob=TRUE, main = paste("resp = ", response, sep=""),
-                        xlab="RT", xlim=c(0,1), ylim=c(0,max(tmp$y)), col=scales::alpha('skyblue',.5)))
+                        xlab="RT", xlim=c(0,1), ylim=c(0,max(tmp$y)), col=scales::alpha('skyblue',.5), breaks = 100))
     with(predicted, lines(density(RT[resp==response]), col="#F24D29", lwd=2))
   }
   
@@ -113,3 +113,32 @@ par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
 }
 
 plot.observed_vs_predicted_RTs(observed.data, predicted.data)
+
+
+# CALCULATE CHI-SQUARED
+#-------------------------------------------------------------------
+#source functions needed to calculate chi-squared
+source("chi-square-funs.R")
+
+#get response time quantile information for observed data
+output1 = data2RTQ(observed.data)
+binedge_c = output1[[1]]
+binedge_e = output1[[2]]
+bindata_c = output1[[3]]
+bindata_e = output1[[4]]
+
+#get response time quantile information for data from model
+output2 = preds2RTQ(predicted.data, binedge_c, binedge_e)
+bindata_pc = output2[[1]]
+bindata_pe = output2[[2]]
+
+#
+
+#calculate chi-squared
+x2 = chisqFit(data = c(bindata_c,bindata_e),
+         preds = c(bindata_pc,bindata_pe),
+         N = 1)
+
+x2
+
+
