@@ -167,11 +167,6 @@ chisqFit = function(data, preds, N) {
   #I have included a double-summation to allow for the possibility of
   #multiple conditions.
   
-  #Set minimum value of predicted frequencies to a very small constant to 
-  #avoid issues with diving by 0
-  preds = pmax(preds,1e-10)
-  
-  #Compute chi-square
   x2 = N * sum(sum(((data - preds) ^ 2) / preds))
   return(x2)
 }

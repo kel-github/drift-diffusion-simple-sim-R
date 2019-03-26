@@ -115,9 +115,9 @@ par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
 plot.observed_vs_predicted_RTs(observed.data, predicted.data)
 
 
-# CALCULATE CHI-SQUARE
+# CALCULATE CHI-SQUARED
 #-------------------------------------------------------------------
-#source functions needed to calculate chi-square
+#source functions needed to calculate chi-squared
 source("chi-square-funs.R")
 
 #get response time quantile information for observed data
@@ -134,15 +134,11 @@ bindata_pe = output2[[2]]
 
 #
 
-#calculate chi-square 
+#calculate chi-squared
 x2 = chisqFit(data = c(bindata_c,bindata_e),
          preds = c(bindata_pc,bindata_pe),
          N = 1)
 
 x2
-
-
-
-
 
 
