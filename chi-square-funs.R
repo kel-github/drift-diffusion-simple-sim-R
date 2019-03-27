@@ -167,6 +167,11 @@ chisqFit = function(data, preds, N) {
   #I have included a double-summation to allow for the possibility of
   #multiple conditions.
   
+  #Set minimum value of predicted counts to a small constant
+  #to avoid dividing by 0
+  preds = pmax(preds,1e-10)
+  
+  #calculate chi-square
   x2 = N * sum(sum(((data - preds) ^ 2) / preds))
   return(x2)
 }
