@@ -21,8 +21,8 @@ generate_rts_w_single_drift <- function(drift_rate, boundary, non_decision_time,
   # use Euler's method to generate sample paths of the diffusion process
   # each trial of the simulation is constructed as a loop that will generate simulated 
   # sample paths (i.e. accumulations of evidence). This loop is then applied nTrials times
-
-
+  
+  
   get.trials <- function(start_point, t0, boundary, non_decision_time, drift_rate, time_step, noise_sdev){
     # the following loop controls the evidence accumulation process. At each time_step,
     # the current evidence total (T_evidene) is compared againt the value of the two absorbing 
@@ -63,14 +63,14 @@ generate_rts_w_single_drift <- function(drift_rate, boundary, non_decision_time,
   data = do.call(rbind, tmp) # make into a nice data frame
   data
 }
-  
+
 # GENERATE DATA FROM SINGLE DRIFT MODEL
 #--------------------------------------------------------------------------
 # first, set the values for the core parameters in the diffusion model (with single drift implementation):
-drift_rate        = 0.4  # drift rate
-boundary          = .04 # boundary separation
-non_decision_time = 0.3 # non-decision time
-start_point       = 0.5  # start point of evidence (0 = lower boundary, 1 = upper boundary, 0.5 = halfway between boundaries)
+drift_rate        = 0.28  # drift rate
+boundary          = .13 # boundary separation
+non_decision_time = 0.12 # non-decision time
+start_point       = 0.45  # start point of evidence (0 = lower boundary, 1 = upper boundary, 0.5 = halfway between boundaries)
 
 # next, set the standard deviation of within trial noise, traditionally set to 0.1 
 # (Ratcliff, 1978), but others set noise_sdev = 1. Either is fine, as this parameter “scales” the 
@@ -99,8 +99,8 @@ load("observed_data.RData")
 # PLOT OUTPUT DATAs AS HISTOGRAMS
 plot.observed_vs_predicted_RTs <- function(observed, predicted){
   
-par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
- 
+  par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
+  
   get.plot <- function(observed, predicted, response){
     tmp = with(predicted, density(RT[resp==response]))
     with(observed, hist(RT[resp==response], prob=TRUE, main = paste("resp = ", response, sep=""),
@@ -136,9 +136,80 @@ bindata_pe = output2[[2]]
 
 #calculate chi-squared
 x2 = chisqFit(data = c(bindata_c,bindata_e),
-         preds = c(bindata_pc,bindata_pe),
-         N = 1)
+              preds = c(bindata_pc,bindata_pe),
+              N = 1)
 
 x2
+
+
+# IMPLEMENT OPTIMISATION ALGORITHM TO FIND THE PARAMETERS THAT MINIMISE CHI-SQAURE
+#-------------------------------------------------------------------
+
+
+#Create wrapper function that takes parameters and observed data (and other settings) 
+#as input arguments and returns chi-square
+
+wrapper4optim  = function(parms, data, time_step=.01, nTrials=1000,  t0=0){
+  
+  #unpack paramaters
+  drift_rate = parms[1]
+  boundary = parms[2]
+  non_decision_time = parms[3]
+  start_point = parms[4]
+  noise_sdev = 0.1
+
+  #Generate predicted data under parameters in question
+  predicted.data = generate_rts_w_single_drift(drift_rate = drift_rate, boundary = boundary,
+                                               non_decision_time = non_decision_time, 
+                                               start_point = start_point, noise_sdev = noise_sdev, 
+                                               time_step = time_step, nTrials = nTrials, t0=t0)
+  
+  #get response time quantile information for observed data
+  output1 = data2RTQ(observed.data)
+  binedge_c = output1[[1]]
+  binedge_e = output1[[2]]
+  bindata_c = output1[[3]]
+  bindata_e = output1[[4]]
+  
+  #get response time quantile information for data from model
+  output2 = preds2RTQ(predicted.data, binedge_c, binedge_e)
+  bindata_pc = output2[[1]]
+  bindata_pe = output2[[2]]
+  
+  #calculate chi-square 
+  x2 = chisqFit(data = c(bindata_c,bindata_e),
+                preds = c(bindata_pc,bindata_pe),
+                N = 1)
+  
+  print(x2)
+  
+  return(x2)
+  
+}
+
+#Specify intiial values for the estimated parameters
+init_drift_rate        =  0  # drift rate
+init_boundary          = .3  # boundary separation
+init_non_decision_time = 0.2 # non-decision time
+init_start_point       = .5  # starting point for evidence
+
+#Run optimisation algorithm on wrapper function
+optim(par = c(init_drift_rate,   #starting values for each parameter
+              init_boundary,
+              init_non_decision_time,
+              init_start_point), 
+      fn = wrapper4optim,        #function to be minimised
+      data = observed.data,      #data to which predictions are compared
+      lower = c(-1,0,0.05,0),  #lower bound for each parameter
+      upper = c( 1,1,1,   1),   #upper bound for each parameter
+      control = list(trace=6))  
+        
+      
+
+
+
+
+
+
 
 
