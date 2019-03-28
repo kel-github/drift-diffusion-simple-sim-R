@@ -1,3 +1,4 @@
 .*
 *checkpoint*
 !.gitignore
+.Rproj.user
