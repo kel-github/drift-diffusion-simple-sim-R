@@ -13,6 +13,7 @@ rm(list = ls())
 # install required packages
 # install.packages("ggplot2")
 library(ggplot2)
+library(tidyverse)
 #--------------------------------------------------------------------------
 
 # DEFINE FUNCTIONS
@@ -136,8 +137,8 @@ bindata_pe = output2[[2]]
 
 #calculate chi-squared
 x2 = chisqFit(data = c(bindata_c,bindata_e),
-              preds = c(bindata_pc,bindata_pe),
-              N = 1)
+              preds = c(bindata_pc,bindata_pe) / nTrials,
+              N = nTrials)
 
 x2
 
@@ -149,7 +150,7 @@ x2
 #Create wrapper function that takes parameters and observed data (and other settings) 
 #as input arguments and returns chi-square
 
-wrapper4optim  = function(parms, data, time_step=.01, nTrials=1000,  t0=0){
+wrapper4optim  = function(parms, data, time_step=.01, nTrials=10000,  t0=0){
   
   #unpack paramaters
   drift_rate = parms[1]
@@ -178,20 +179,30 @@ wrapper4optim  = function(parms, data, time_step=.01, nTrials=1000,  t0=0){
   
   #calculate chi-square 
   x2 = chisqFit(data = c(bindata_c,bindata_e),
-                preds = c(bindata_pc,bindata_pe),
-                N = 1)
+                preds = c(bindata_pc,bindata_pe) / nTrials,
+                N = 10000)
   
-  print(x2)
+  observed.data$source = "observed"
+  predicted.data$source = "predicted"
+  
+  plot=bind_rows(observed.data,predicted.data) %>%
+    ggplot() +
+    geom_density(aes(x=RT,group=source,colour=source),alpha=0.1) +
+    facet_grid(.~resp)
+  
+  
+  print(plot)
+  print(c(x2,parms))
   
   return(x2)
   
 }
 
 #Specify intiial values for the estimated parameters
-init_drift_rate        =  0  # drift rate
-init_boundary          = .3  # boundary separation
-init_non_decision_time = 0.2 # non-decision time
-init_start_point       = .5  # starting point for evidence
+init_drift_rate        =  0.28  # drift rate
+init_boundary          = .13  # boundary separation
+init_non_decision_time = 0.12 # non-decision time
+init_start_point       = .45  # starting point for evidence
 
 #Run optimisation algorithm on wrapper function
 optim(par = c(init_drift_rate,   #starting values for each parameter
@@ -204,7 +215,8 @@ optim(par = c(init_drift_rate,   #starting values for each parameter
       upper = c( 1,1,1,   1),   #upper bound for each parameter
       control = list(trace=6))  
         
-      
+#data generating values:
+#drift rate = .28, boundary = 0.13, non decision time = 0.12, start point = 0.45
 
 
 
