@@ -12,7 +12,7 @@ library(tidyverse) #for first time installation: "install.packages('tidyverse')"
 
 ### set parameter values for simulation ###
 
-drift_rate_mean = .2      #mean change in evidence per second (positive values favour upper bound, negative values favour lower bound)
+drift_rate_mean = .5      #mean change in evidence per second (positive values favour upper bound, negative values favour lower bound)
 drift_rate_sd = 1         #sd of change in evidence per second (aka diffusion coefficient)
 boundary_separation = 2   #distance between response thresholds, and value of upper threshold (lower threshold has value of 0)
 start_point = 1           #level of evidence at start of trial (when half of boundary separation, no bias is present)

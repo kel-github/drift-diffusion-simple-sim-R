@@ -99,17 +99,14 @@ load("observed_data.RData")
 # PLOT OUTPUT DATAs AS HISTOGRAMS
 plot.observed_vs_predicted_RTs <- function(observed, predicted){
   
-par(mfrow=c(2,1), mar=c(3, 3, 1, 1))
- 
-  get.plot <- function(observed, predicted, response){
-    tmp = with(predicted, density(RT[resp==response]))
-    with(observed, hist(RT[resp==response], prob=TRUE, main = paste("resp = ", response, sep=""),
-                        xlab="RT", xlim=c(0,1), ylim=c(0,max(tmp$y)), col=scales::alpha('skyblue',.5), breaks = 100))
-    with(predicted, lines(density(RT[resp==response]), col="#F24D29", lwd=2))
-  }
+  observed$source = "observed"
+  predicted$source = "predicted"
   
-  get.plot(observed = observed, predicted = predicted, response = 0)
-  get.plot(observed = observed, predicted = predicted, response = 1)
+  bind_rows(observed,predicted) %>%
+    ggplot() +
+    geom_density(aes(x=RT,group=source,colour=source),alpha=0.1) +
+    facet_grid(.~resp)
+    
 }
 
 plot.observed_vs_predicted_RTs(observed.data, predicted.data)
@@ -136,8 +133,8 @@ bindata_pe = output2[[2]]
 
 #calculate chi-squared
 x2 = chisqFit(data = c(bindata_c,bindata_e),
-         preds = c(bindata_pc,bindata_pe),
-         N = 1)
+         preds = c(bindata_pc,bindata_pe) / nTrials,
+         N = nTrials)
 
 x2
 

@@ -172,6 +172,6 @@ chisqFit = function(data, preds, N) {
   preds = pmax(preds,1e-10)
   
   #calculate chi-square
-  x2 = N * sum(sum(((data - preds) ^ 2) / preds))
+  x2 = N * sum( sum( ( (data - preds ) ^ 2) / preds ) )
   return(x2)
 }
