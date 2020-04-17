@@ -13,5 +13,4 @@ written by D. Rangelov, Feb 2019, free to share and use
 _MATLAB_ code to simulate responses and RTs using the drift diffusion model.
 written by D. Sewell, Feb 2019, free to share and use
 
-
-
+## My change here!
